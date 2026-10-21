@@ -1,0 +1,3 @@
+{"tag": "lenet", "nvidia_smi_peak_mb": 738}
+{"tag": "alexnet_base", "nvidia_smi_peak_mb": 1938}
+{"tag": "resnet18", "nvidia_smi_peak_mb": 2740}
