@@ -80,6 +80,8 @@ base_config.TRAIN.OPTIMIZER.EPS = 1e-8
 base_config.TRAIN.OPTIMIZER.BETAS = (0.9, 0.999)
 # SGD momentum
 base_config.TRAIN.OPTIMIZER.MOMENTUM = 0.9
+# Weight decay (AdamW default is 0.01)
+base_config.TRAIN.WEIGHT_DECAY = 0.01
 
 # -----------------------------------------------------------------------------
 # Augmentation settings
@@ -89,6 +91,10 @@ base_config.AUG = CN()
 base_config.AUG.COLOR_JITTER = 0.4
 # Use AutoAugment policy. "v0" or "original"
 base_config.AUG.RAND_AUGMENT = "rand-m9-mstd0.5-inc1"
+# Augmentation scheme for CIFAR-10 training: "default" (color jitter + flip),
+# "none", "crop_flip" (pad-4 random crop + flip) or "trivial_erase"
+# (TrivialAugmentWide + flip + random erasing)
+base_config.AUG.SCHEME = "default"
 
 # -----------------------------------------------------------------------------
 # Testing settings
@@ -113,6 +119,10 @@ base_config.PRINT_FREQ = 10
 base_config.SEED = 0
 # Perform evaluation only, overwritten by command line argument
 base_config.EVAL_MODE = False
+# Weights & Biases project; empty disables logging
+base_config.WANDB_PROJECT = ""
+# Run name, used for W&B
+base_config.TAG = ""
 
 
 def _update_config_from_file(config, cfg_file):

@@ -51,7 +51,7 @@ def main(config):
     dataset_train, dataset_val, dataset_test, data_loader_train, data_loader_val, data_loader_test = build_loader(
         config
     )
-    device = "cpu"
+    device = "cuda"
     model = build_model(config)
     # logger.info(str(model))
 
@@ -83,10 +83,20 @@ def main(config):
         if config.EVAL_MODE:
             return
 
+    wandb_run = None
+    if config.WANDB_PROJECT:
+        import wandb
+        wandb_run = wandb.init(project=config.WANDB_PROJECT, name=config.TAG or None, config=json.loads(json.dumps(config, default=str)))
+
     logger.info("Start training")
     start_time = time.time()
     for epoch in range(config.TRAIN.START_EPOCH, config.TRAIN.EPOCHS):
+        torch.cuda.synchronize()
+        epoch_start = time.time()
         train_acc1, train_loss = train_one_epoch(config, model, criterion, data_loader_train, optimizer, epoch)
+        torch.cuda.synchronize()
+        epoch_time = time.time() - epoch_start
+        lr_scheduler.step()
         logger.info(f" * Train Acc {train_acc1:.3f} Train Loss {train_loss:.3f}")
         logger.info(f"Accuracy of the network on the {len(dataset_train)} train images: {train_acc1:.1f}%")
 
@@ -103,8 +113,13 @@ def main(config):
 
 
         log_stats = {"epoch": epoch, "n_params": n_parameters, "n_flops": n_flops,
-                     "train_acc": train_acc1, "train_loss": train_loss, 
-                     "val_acc": val_acc1, "val_loss": val_loss}
+                     "train_acc": train_acc1, "train_loss": train_loss,
+                     "val_acc": val_acc1, "val_loss": val_loss,
+                     "epoch_time": epoch_time, "img_per_s": len(dataset_train) / epoch_time,
+                     "max_mem_mb": torch.cuda.max_memory_allocated() / 2**20,
+                     "lr": optimizer.param_groups[0]["lr"]}
+        if wandb_run:
+            wandb_run.log(log_stats, step=epoch)
         with open(
                 os.path.join(config.OUTPUT, "metrics.json"), mode="a", encoding="utf-8"
             ) as f:
@@ -113,6 +128,9 @@ def main(config):
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
     logger.info("Training time {}".format(total_time_str))
+    if wandb_run:
+        wandb_run.summary.update({"max_val_acc": max_accuracy, "train_time_s": total_time})
+        wandb_run.finish()
 
     logger.info("Start testing")
     preds = evaluate(config, data_loader_test, model)

@@ -55,12 +55,15 @@ class MediumImagenetHDF5Dataset(Dataset):
 
 
 class CIFAR10Dataset(Dataset):
-    def __init__(self, img_size=32, train=True):
+    MEAN, STD = (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)
+
+    def __init__(self, img_size=32, train=True, root="/data/nmep/cv/cifar10", scheme="default"):
         self.train = train
         self.img_size = img_size
+        self.scheme = scheme
 
         self.transform = self._get_transforms()
-        self.dataset = CIFAR10(root="/data/nmep/cv/cifar10", train=self.train, download=True)
+        self.dataset = CIFAR10(root=root, train=self.train, download=True)
 
     def __getitem__(self, index):
         image, label = self.dataset[index]
@@ -71,18 +74,23 @@ class CIFAR10Dataset(Dataset):
         return len(self.dataset)
 
     def _get_transforms(self):
-        if self.train:
-            transform = [
+        to_tensor = [
+            transforms.ToTensor(),
+            transforms.Normalize(self.MEAN, self.STD),
+            transforms.Resize([self.img_size] * 2),
+        ]
+        if not self.train or self.scheme == "none":
+            return transforms.Compose(to_tensor)
+        if self.scheme == "default":
+            aug = [
                 transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
                 transforms.RandomHorizontalFlip(),
-                transforms.ToTensor(),
-                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-                transforms.Resize([self.img_size] * 2),
             ]
+        elif self.scheme == "crop_flip":
+            aug = [transforms.RandomCrop(32, padding=4, padding_mode="reflect"), transforms.RandomHorizontalFlip()]
+        elif self.scheme == "trivial_erase":
+            aug = [transforms.TrivialAugmentWide(), transforms.RandomHorizontalFlip()]
+            return transforms.Compose(aug + to_tensor + [transforms.RandomErasing(p=0.25)])
         else:
-            transform = [
-                transforms.ToTensor(),
-                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-                transforms.Resize([self.img_size] * 2),
-            ]
-        return transforms.Compose(transform)
+            raise ValueError(f"unknown augmentation scheme {self.scheme}")
+        return transforms.Compose(aug + to_tensor)

@@ -1,0 +1,25 @@
+AUG:
+  COLOR_JITTER: 0.4
+  SCHEME: "default"
+DATA:
+  BATCH_SIZE: 256
+  DATASET: "cifar10"
+  IMG_SIZE: 70
+  NUM_WORKERS: 16
+  PIN_MEMORY: True
+MODEL:
+  NAME: alexnet
+  NUM_CLASSES: 10
+TRAIN:
+  EPOCHS: 30
+  LR: 3e-4
+  WEIGHT_DECAY: 0.01
+  LR_SCHEDULER:
+    NAME: "cosine"
+  OPTIMIZER:
+    NAME: "adamw"
+    EPS: 1e-8
+    BETAS: (0.9, 0.999)
+OUTPUT: "output/alexnet_cifar"
+SAVE_FREQ: 100
+PRINT_FREQ: 99999

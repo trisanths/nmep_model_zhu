@@ -5,9 +5,10 @@ from data.datasets import CIFAR10Dataset, MediumImagenetHDF5Dataset
 
 def build_loader(config):
     if config.DATA.DATASET == "cifar10":
-        dataset_train = CIFAR10Dataset(img_size=config.DATA.IMG_SIZE, train=True)
-        dataset_val = CIFAR10Dataset(img_size=config.DATA.IMG_SIZE, train=False)
-        dataset_test = CIFAR10Dataset(img_size=config.DATA.IMG_SIZE, train=False)
+        root = config.DATA.DATA_PATH or "/data/nmep/cv/cifar10"
+        dataset_train = CIFAR10Dataset(img_size=config.DATA.IMG_SIZE, train=True, root=root, scheme=config.AUG.SCHEME)
+        dataset_val = CIFAR10Dataset(img_size=config.DATA.IMG_SIZE, train=False, root=root)
+        dataset_test = CIFAR10Dataset(img_size=config.DATA.IMG_SIZE, train=False, root=root)
     elif config.DATA.DATASET == "medium_imagenet":
         dataset_train = MediumImagenetHDF5Dataset(config.DATA.IMG_SIZE, split="train", augment=True)
         dataset_val = MediumImagenetHDF5Dataset(config.DATA.IMG_SIZE, split="val", augment=False)
